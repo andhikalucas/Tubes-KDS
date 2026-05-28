@@ -14,17 +14,81 @@ W_CARBON = 0.05    # Multiplier for hydrophobic pathology tendency
 # ==============================================================================
 # PIPELINE UTAMA UTALITAS KOMPUTASI
 # ==============================================================================
-def create_lipid_dataset() -> pd.DataFrame:
+import numpy as np
+import pandas as pd
+
+def create_lipid_dataset(n_random=50) -> pd.DataFrame:
     """
-    Menginisialisasi dataset representasi struktural lipid riil dunia nyata.
+    Menginisialisasi dataset gabungan: 
+    1. Data faktual konstan (referensi riil)
+    2. Data acak teoretis (in silico screening)
     """
-    data = {
-        'Molecule_Name': ['Palmitic Acid', 'Stearic Acid', 'Oleic Acid', 'Elaidic Acid', 'Linoleic Acid'],
-        'Carbon_Length': [16, 18, 18, 18, 18],
-        'Double_Bonds': [0, 0, 1, 1, 2],
-        'Isomer_Type': ['none', 'none', 'cis', 'trans', 'cis']
+    
+    # =====================================================================
+    # 1. FACTUAL DATA (Constants berdasarkan literatur)
+    # =====================================================================
+    factual_data = {
+        'Molecule_Name': [
+            # Saturated Fats (Aterogenik)
+            'Palmitic Acid', 'Stearic Acid', 'Myristic Acid', 'Arachidic Acid',
+            # Cis-Unsaturated (Kardioprotektif)
+            'Oleic Acid', 'Linoleic Acid', 'Arachidonic Acid', 'EPA',
+            # Trans-Unsaturated (Sangat Aterogenik)
+            'Elaidic Acid', 'Linoelaidic Acid', 'Vaccenic Acid'
+        ],
+        'Carbon_Length': [
+            16, 18, 14, 20,  # Saturated
+            18, 18, 20, 20,  # Cis
+            18, 18, 18       # Trans
+        ],
+        'Double_Bonds': [
+            0, 0, 0, 0,      # Saturated
+            1, 2, 4, 5,      # Cis
+            1, 2, 1          # Trans
+        ],
+        'Isomer_Type': [
+            'none', 'none', 'none', 'none',
+            'cis', 'cis', 'cis', 'cis',
+            'trans', 'trans', 'trans'
+        ]
     }
-    return pd.DataFrame(data)
+    df_factual = pd.DataFrame(factual_data)
+    df_factual['Data_Source'] = 'Factual Reference'
+
+    # =====================================================================
+    # 2. RANDOMIZED / SYNTHETIC DATA (Simulasi In Silico)
+    # =====================================================================
+    # Menggunakan seed agar hasil random tetap sama setiap kali di-run (reproducible)
+    np.random.seed(42) 
+    
+    # Aturan biokimia: Panjang rantai karbon umumnya genap (12 hingga 24)
+    synthetic_carbons = np.random.choice([12, 14, 16, 18, 20, 22, 24], n_random)
+    
+    # Jumlah ikatan rangkap acak, dengan batas maksimal proporsional terhadap panjang rantai
+    synthetic_bonds = [np.random.randint(0, (c // 3)) for c in synthetic_carbons] 
+    
+    synthetic_isomers = []
+    for b in synthetic_bonds:
+        if b == 0:
+            synthetic_isomers.append('none')
+        else:
+            # Jika ada ikatan rangkap, assign cis/trans secara acak (Cis lebih dominan di alam)
+            synthetic_isomers.append(np.random.choice(['cis', 'trans'], p=[0.7, 0.3]))
+
+    synthetic_data = {
+        'Molecule_Name': [f'Synthetic_Lipid_{i+1}' for i in range(n_random)],
+        'Carbon_Length': synthetic_carbons,
+        'Double_Bonds': synthetic_bonds,
+        'Isomer_Type': synthetic_isomers
+    }
+    df_synthetic = pd.DataFrame(synthetic_data)
+    df_synthetic['Data_Source'] = 'Synthetic Random'
+
+    # =====================================================================
+    # 3. MENGGABUNGKAN KEDUA DATASET
+    # =====================================================================
+    df_combined = pd.concat([df_factual, df_synthetic], ignore_index=True)
+    return df_combined
 
 def extract_structural_features(df: pd.DataFrame) -> pd.DataFrame:
     """
