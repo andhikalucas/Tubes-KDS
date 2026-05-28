@@ -11,9 +11,6 @@ W_TRANS = 4.0      # Maximum penalty for dual impact (raises LDL, lowers HDL)
 W_CIS = 1.5        # Risk reduction incentive for vascular flexibility
 W_CARBON = 0.05    # Multiplier for hydrophobic pathology tendency
 
-# ==============================================================================
-# PIPELINE UTAMA UTALITAS KOMPUTASI
-# ==============================================================================
 import numpy as np
 import pandas as pd
 
@@ -24,9 +21,6 @@ def create_lipid_dataset(n_random=50) -> pd.DataFrame:
     2. Data acak teoretis (in silico screening)
     """
     
-    # =====================================================================
-    # 1. FACTUAL DATA (Constants berdasarkan literatur)
-    # =====================================================================
     factual_data = {
         'Molecule_Name': [
             # Saturated Fats (Aterogenik)
@@ -55,16 +49,10 @@ def create_lipid_dataset(n_random=50) -> pd.DataFrame:
     df_factual = pd.DataFrame(factual_data)
     df_factual['Data_Source'] = 'Factual Reference'
 
-    # =====================================================================
-    # 2. RANDOMIZED / SYNTHETIC DATA (Simulasi In Silico)
-    # =====================================================================
-    # Menggunakan seed agar hasil random tetap sama setiap kali di-run (reproducible)
     np.random.seed(42) 
     
-    # Aturan biokimia: Panjang rantai karbon umumnya genap (12 hingga 24)
     synthetic_carbons = np.random.choice([12, 14, 16, 18, 20, 22, 24], n_random)
     
-    # Jumlah ikatan rangkap acak, dengan batas maksimal proporsional terhadap panjang rantai
     synthetic_bonds = [np.random.randint(0, (c // 3)) for c in synthetic_carbons] 
     
     synthetic_isomers = []
@@ -72,7 +60,6 @@ def create_lipid_dataset(n_random=50) -> pd.DataFrame:
         if b == 0:
             synthetic_isomers.append('none')
         else:
-            # Jika ada ikatan rangkap, assign cis/trans secara acak (Cis lebih dominan di alam)
             synthetic_isomers.append(np.random.choice(['cis', 'trans'], p=[0.7, 0.3]))
 
     synthetic_data = {
@@ -84,9 +71,6 @@ def create_lipid_dataset(n_random=50) -> pd.DataFrame:
     df_synthetic = pd.DataFrame(synthetic_data)
     df_synthetic['Data_Source'] = 'Synthetic Random'
 
-    # =====================================================================
-    # 3. MENGGABUNGKAN KEDUA DATASET
-    # =====================================================================
     df_combined = pd.concat([df_factual, df_synthetic], ignore_index=True)
     return df_combined
 
